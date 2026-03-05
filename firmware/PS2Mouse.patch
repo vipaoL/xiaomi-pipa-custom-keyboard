@@ -1,0 +1,77 @@
+diff --git a/src/PS2Mouse.cpp b/src/PS2Mouse.cpp
+index 0b6b61d..82f5a19 100644
+--- a/src/PS2Mouse.cpp
++++ b/src/PS2Mouse.cpp
+@@ -51,10 +51,16 @@ bool PS2Mouse::begin(){
+   byte minor, major, modelCode;
+   for (uint8_t i =0; i < 3; i++){                       // -“how many times have you rebooted your computer?”
+     send(0xFF);                                         // -“three dude, you always say 'overload three times'” =)
+-    delay(1000);                                        // Note: This may need an extra-long timeout.
+-    if (get() != 0xAA){
+-      error("init, expected 0xAA");
+-      return false;
++    delay(10 + 500 * i);                                // Note: This may need an extra-long timeout.
++    for (uint8_t j = 0; j < 3; j++){
++      if (get() == 0xAA) {
++        break;
++      }
++      if (j >= 10) {
++        error("init, expected 0xAA");
++        return false;
++      }
++      delay(10);
+     }
+     if (get() != 0x00){
+       error("init, expected 0x00");
+@@ -66,15 +72,6 @@ bool PS2Mouse::begin(){
+   minor = get();                                        // First status byte: TouchPad minor rev.
+   modelCode = get();                                    // Second infoModelCode, status byte: 0x47 == Synaptics TouchPad
+   major = get();                                        // Third status byte: Major rev in low 4 bits
+-  Serial.println();
+-  Serial.print("TouchPad: ");
+-  (modelCode == 0x47) ? Serial.print("Synaptics") : Serial.print("unknown");
+-  Serial.print(", id: ");
+-  Serial.print(modelCode, BIN);
+-  Serial.print(", minor rev.: ");
+-  Serial.print(minor, BIN);
+-  Serial.print(", major: ");
+-  Serial.print(major, BIN);
+ 
+   if(modelCode == 0x47){
+     send(0xF5);                                         // Disable before activate Absolute mode
+@@ -93,7 +90,6 @@ bool PS2Mouse::begin(){
+ 
+   send(0xF4);                                           // Enable command
+   set_CLOCK(1);                                         // Release PS/2 bus inhibit
+-  Serial.println(", state: init completed");
+   return true;
+ }
+ 
+@@ -157,15 +153,12 @@ byte PS2Mouse::get(bool handler){
+ }
+ 
+ void PS2Mouse::error(const char* e){
+-  Serial.print("Error: ");
+-  Serial.println(e);
+ }
+ 
+ void PS2Mouse::wait_CLOCK(byte state){
+   unsigned long saveTime = millis();
+   while (digitalRead(_scl) != state){
+     if(millis() - saveTime > 50){
+-      error("Timeout SCL");
+       break;
+     }
+   }
+diff --git a/src/PS2Mouse.h b/src/PS2Mouse.h
+index 1540c8e..b1eaae1 100644
+--- a/src/PS2Mouse.h
++++ b/src/PS2Mouse.h
+@@ -1,6 +1,6 @@
+ #ifndef MOUSE_H_
+ #define MOUSE_H_
+-#include <ESP8266WiFi.h>
++#include <Arduino.h>
+ 
+ class PS2Mouse{
+     private:
