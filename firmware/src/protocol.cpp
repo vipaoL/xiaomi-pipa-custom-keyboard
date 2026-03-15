@@ -20,9 +20,7 @@ uint8_t encodeByte(uint8_t nonce, uint8_t nibble) {
 
 void sendRawBytes(uint8_t* data, uint8_t len) {
   for(int i = 0; i < 8; i++) Serial1.write(0x55);
-  Serial1.write(0x21);
   Serial1.write(data, len);
-  Serial1.write(0x2C);
   for(int i = 0; i < 4; i++) Serial1.write(0x55);
   Serial1.flush();
 }
@@ -31,6 +29,8 @@ void sendPacket(uint8_t type, const uint8_t* payload, uint8_t len) {
   uint8_t txBuffer[128];
   uint8_t txIdx = 0;
   uint8_t nonce = random(0, 8);
+
+  txBuffer[txIdx++] = 0x21; // included in the checksum
 
   txBuffer[txIdx++] = type;
 
@@ -47,6 +47,8 @@ void sendPacket(uint8_t type, const uint8_t* payload, uint8_t len) {
 
   txBuffer[txIdx++] = encodeByte(nonce, checksum >> 4);
   txBuffer[txIdx++] = encodeByte(nonce, checksum & 0x0F);
+
+  txBuffer[txIdx++] = 0x2C; // not included in the checksum
 
   sendRawBytes(txBuffer, txIdx);
 }
